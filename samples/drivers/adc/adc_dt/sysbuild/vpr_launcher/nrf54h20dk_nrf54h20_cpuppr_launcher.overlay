@@ -1,0 +1,10 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&adc {
+	status = "reserved";
+	interrupt-parent = <&cpuppr_clic>;
+};

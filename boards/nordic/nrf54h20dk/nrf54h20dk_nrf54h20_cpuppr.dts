@@ -58,3 +58,7 @@
 	pinctrl-1 = <&uart136_sleep>;
 	pinctrl-names = "default", "sleep";
 };
+
+&adc {
+	status = "okay";
+};
