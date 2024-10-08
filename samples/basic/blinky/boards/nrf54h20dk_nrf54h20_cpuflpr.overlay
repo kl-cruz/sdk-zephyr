@@ -1,0 +1,22 @@
+&gpio9 {
+	status = "okay";
+};
+
+&gpiote130 {
+	status = "disabled";
+	/delete-property/gpiote-instance;
+};
+
+/ {
+	leds {
+ 		compatible = "gpio-leds";
+ 
+ 		led0: led_0 {
+ 			gpios = <&gpio9 0 GPIO_ACTIVE_HIGH>;
+		};
+ 	};
+
+	aliases {
+		led0 = &led0;
+	};
+};

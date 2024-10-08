@@ -796,7 +796,6 @@
 				status = "disabled";
 				#gpio-cells = <2>;
 				gpio-controller;
-				gpiote-instance = <&gpiote130>;
 				ngpios = <6>;
 				port = <9>;
 			};

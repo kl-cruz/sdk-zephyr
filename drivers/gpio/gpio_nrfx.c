@@ -123,7 +123,10 @@ static int gpio_nrfx_pin_configure(const struct device *port, gpio_pin_t pin,
 
 	if ((flags & (GPIO_INPUT | GPIO_OUTPUT)) == GPIO_DISCONNECTED) {
 		/* Ignore the error code. The pin may not have been used. */
-		(void)nrfx_gpiote_pin_uninit(&cfg->gpiote, abs_pin);
+		if (IS_ENABLED(CONFIG_GPIO_NRFX_INTERRUPT))
+		{
+			(void)nrfx_gpiote_pin_uninit(&cfg->gpiote, abs_pin);
+		}
 	} else {
 		/* Remove previously configured trigger when pin is reconfigured. */
 		if (IS_ENABLED(CONFIG_GPIO_NRFX_INTERRUPT)) {
@@ -141,24 +144,27 @@ static int gpio_nrfx_pin_configure(const struct device *port, gpio_pin_t pin,
 			}
 		}
 
-		if (flags & GPIO_OUTPUT) {
-			nrfx_gpiote_output_config_t output_config = {
-				.drive = drive,
-				.input_connect = (flags & GPIO_INPUT)
-					       ? NRF_GPIO_PIN_INPUT_CONNECT
-					       : NRF_GPIO_PIN_INPUT_DISCONNECT,
-				.pull = pull,
-			};
+		if (IS_ENABLED(CONFIG_GPIO_NRFX_INTERRUPT))
+		{
+			if (flags & GPIO_OUTPUT) {
+				nrfx_gpiote_output_config_t output_config = {
+					.drive = drive,
+					.input_connect = (flags & GPIO_INPUT)
+							? NRF_GPIO_PIN_INPUT_CONNECT
+							: NRF_GPIO_PIN_INPUT_DISCONNECT,
+					.pull = pull,
+				};
 
-			err = nrfx_gpiote_output_configure(&cfg->gpiote,
-				abs_pin, &output_config, NULL);
-		} else {
-			nrfx_gpiote_input_pin_config_t input_pin_config = {
-				.p_pull_config = &pull,
-			};
+				err = nrfx_gpiote_output_configure(&cfg->gpiote,
+					abs_pin, &output_config, NULL);
+			} else {
+				nrfx_gpiote_input_pin_config_t input_pin_config = {
+					.p_pull_config = &pull,
+				};
 
-			err = nrfx_gpiote_input_configure(&cfg->gpiote,
-				abs_pin, &input_pin_config);
+				err = nrfx_gpiote_input_configure(&cfg->gpiote,
+					abs_pin, &input_pin_config);
+			}
 		}
 
 		if (err != NRFX_SUCCESS) {
@@ -398,13 +404,16 @@ static int gpio_nrfx_init(const struct device *port)
 		return 0;
 	}
 
-	if (nrfx_gpiote_init_check(&cfg->gpiote)) {
-		return 0;
-	}
+	if (IS_ENABLED(CONFIG_GPIO_NRFX_INTERRUPT))
+	{
+		if (nrfx_gpiote_init_check(&cfg->gpiote)) {
+			return 0;
+		}
 
-	err = nrfx_gpiote_init(&cfg->gpiote, 0 /*not used*/);
-	if (err != NRFX_SUCCESS) {
-		return -EIO;
+		err = nrfx_gpiote_init(&cfg->gpiote, 0 /*not used*/);
+		if (err != NRFX_SUCCESS) {
+			return -EIO;
+		}
 	}
 
 #ifdef CONFIG_GPIO_NRFX_INTERRUPT
