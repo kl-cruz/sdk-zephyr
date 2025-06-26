@@ -33,6 +33,8 @@ LOG_MODULE_REGISTER(spi_nrfx_spim, CONFIG_SPI_LOG_LEVEL);
 #include "spi_context.h"
 #include "spi_nrfx_common.h"
 
+#include <hal/nrf_gpio.h>
+
 #if defined(CONFIG_SOC_NRF52832) && !defined(CONFIG_SOC_NRF52832_ALLOW_SPIM_DESPITE_PAN_58)
 #error  This driver is not available by default for nRF52832 because of Product Anomaly 58 \
 	(SPIM: An additional byte is clocked out when RXD.MAXCNT == 1 and TXD.MAXCNT <= 1). \
@@ -154,7 +156,9 @@ static inline void finalize_spi_transaction(const struct device *dev, bool deact
 	void *reg = dev_config->spim.p_reg;
 
 	if (deactivate_cs) {
+		nrf_gpio_pin_set(3);
 		spi_context_cs_control(&dev_data->ctx, false);
+		nrf_gpio_pin_clear(3);
 	}
 
 	if (NRF_SPIM_IS_320MHZ_SPIM(reg) && !(dev_data->ctx.config->operation & SPI_HOLD_ON_CS)) {
@@ -166,6 +170,7 @@ static inline void finalize_spi_transaction(const struct device *dev, bool deact
 	}
 
 	pm_device_runtime_put_async(dev, K_NO_WAIT);
+//	nrf_gpio_pin_clear(7);
 }
 
 static inline uint32_t get_nrf_spim_frequency(uint32_t frequency)
@@ -540,6 +545,8 @@ static int transceive(const struct device *dev,
 		      spi_callback_t cb,
 		      void *userdata)
 {
+	pm_device_runtime_get(dev);
+//		nrf_gpio_pin_set(7);
 	struct spi_nrfx_data *dev_data = dev->data;
 	const struct spi_nrfx_config *dev_config = dev->config;
 	void *reg = dev_config->spim.p_reg;
@@ -548,9 +555,10 @@ static int transceive(const struct device *dev,
 	pm_device_runtime_get(dev);
 	spi_context_lock(&dev_data->ctx, asynchronous, cb, userdata, spi_cfg);
 
+
 	error = configure(dev, spi_cfg);
 
-	if (error == 0 && !IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+if (error == 0 && !IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
 		error = request_clock(dev);
 	}
 
@@ -574,11 +582,21 @@ static int transceive(const struct device *dev,
 		if (NRF_SPIM_IS_320MHZ_SPIM(reg)) {
 			nrfy_spim_enable(reg);
 		}
+		__asm("");
+		nrf_gpio_pin_set(3);
 		spi_context_cs_control(&dev_data->ctx, true);
 
-		transfer_next_chunk(dev);
+		__asm("");
+		nrf_gpio_pin_clear(3);
 
+		__asm("");
+		nrf_gpio_pin_set(5);
+		transfer_next_chunk(dev);
+		__asm("");
+nrf_gpio_pin_clear(5);
+		
 		error = spi_context_wait_for_completion(&dev_data->ctx);
+
 		if (error == -ETIMEDOUT) {
 			/* Set the chunk length to 0 so that event_handler()
 			 * knows that the transaction timed out and is to be

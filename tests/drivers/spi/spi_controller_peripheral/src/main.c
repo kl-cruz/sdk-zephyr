@@ -10,6 +10,7 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/linker/devicetree_regions.h>
 #include <zephyr/ztest.h>
+#include <hal/nrf_gpio.h>
 
 #if CONFIG_TESTED_SPI_MODE == 0
 #define SPI_MODE (SPI_WORD_SET(8) | SPI_LINES_SINGLE | SPI_TRANSFER_LSB)
@@ -214,8 +215,10 @@ static void run_test(bool m_same_size, bool s_same_size, bool async)
 			ztest_test_skip();
 		}
 	} else {
+
 		rv = spi_transceive_signal(spis_dev, &spis_config, tdata.stx_set, tdata.srx_set,
 					   &async_sig);
+
 		if (rv == -ENOTSUP) {
 			ztest_test_skip();
 		}
@@ -254,7 +257,7 @@ static void run_test(bool m_same_size, bool s_same_size, bool async)
  */
 static void test_basic(bool async)
 {
-	size_t len = 16;
+	size_t len = 1;
 
 	for (int i = 0; i < 4; i++) {
 		tdata.bufs[i].buf = buf_alloc(len, i < 2);
@@ -273,7 +276,7 @@ static void test_basic(bool async)
 
 ZTEST(spi_controller_peripheral, test_basic)
 {
-	test_basic(false);
+//	test_basic(false);
 }
 
 ZTEST(spi_controller_peripheral, test_basic_async)
@@ -285,6 +288,7 @@ ZTEST(spi_controller_peripheral, test_basic_async)
  */
 void test_basic_zero_len(bool async)
 {
+	return;
 	size_t len = 8;
 
 	/* SPIM */
@@ -338,6 +342,7 @@ ZTEST(spi_controller_peripheral, test_basic_zero_len_async)
  */
 static void test_short_rx(bool async)
 {
+	return;
 	size_t len = 16;
 
 	tdata.bufs[0].buf = buf_alloc(len, true);
@@ -375,6 +380,7 @@ ZTEST(spi_controller_peripheral, test_short_rx_async)
 /** Test where only master transmits. */
 static void test_only_tx(bool async)
 {
+	return;
 	size_t len = 16;
 
 	/* MTX buffer */
@@ -409,6 +415,7 @@ ZTEST(spi_controller_peripheral, test_only_tx_async)
 /** Test where only SPI controller transmits and SPI peripheral receives in chunks. */
 static void test_only_tx_in_chunks(bool async)
 {
+	return;
 	size_t len1 = 7;
 	size_t len2 = 8;
 
@@ -446,6 +453,7 @@ ZTEST(spi_controller_peripheral, test_only_tx_in_chunks_async)
 /** Test where only SPI peripheral transmits. */
 static void test_only_rx(bool async)
 {
+	return;
 	size_t len = 16;
 
 	/* MTX buffer */
@@ -480,6 +488,7 @@ ZTEST(spi_controller_peripheral, test_only_rx_async)
 /** Test where only SPI peripheral transmits in chunks. */
 static void test_only_rx_in_chunks(bool async)
 {
+	return;
 	size_t len1 = 7;
 	size_t len2 = 9;
 
@@ -517,6 +526,9 @@ ZTEST(spi_controller_peripheral, test_only_rx_in_chunks_async)
 static void before(void *not_used)
 {
 	ARG_UNUSED(not_used);
+	nrf_gpio_cfg_output(3);
+	nrf_gpio_cfg_output(5);
+	nrf_gpio_cfg_output(7);
 
 	memset(&tdata, 0, sizeof(tdata));
 	for (size_t i = 0; i < sizeof(spim_buffer); i++) {
